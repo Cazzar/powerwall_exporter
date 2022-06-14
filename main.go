@@ -1,40 +1,40 @@
 package main
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
-	"io/ioutil"
 	"time"
-	"encoding/pem"
-	"crypto/x509"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/jessevdk/go-flags"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"github.com/foogod/go-powerwall"
+	"github.com/cazzar/go-powerwall"
 )
 
 const (
-	exporterName = "powerwall"
-	exporterVersion = "0.2.0"
-	projectURL = "https://github.com/foogod/powerwall_exporter"
+	exporterName         = "powerwall"
+	exporterVersion      = "0.2.0"
+	projectURL           = "https://github.com/foogod/powerwall_exporter"
 	defaultListenAddress = ":9871"
-	defaultMetricsPath = "/metrics"
-	defaultLoginEmail = "powerwall_exporter@example.org"
+	defaultMetricsPath   = "/metrics"
+	defaultLoginEmail    = "powerwall_exporter@example.org"
 	defaultRetryInterval = "1s"
-	defaultRetryTimeout = "0s" // Retries disabled by default
+	defaultRetryTimeout  = "0s" // Retries disabled by default
 )
 
 var options struct {
-	Debug bool `long:"debug" description:"Enable debug messages"`
-	LogStyle string `long:"log.style" description:"Style of log output to produce" choice:"text" choice:"logfmt" choice:"json" default:"text"`
+	Debug      bool   `long:"debug" description:"Enable debug messages"`
+	LogStyle   string `long:"log.style" description:"Style of log output to produce" choice:"text" choice:"logfmt" choice:"json" default:"text"`
 	ConfigFile string `long:"config.file" description:"Path to config file"`
-	FetchCert bool `long:"fetchcert" description:"Retrieve TLS cert and store it in cert file"`
+	FetchCert  bool   `long:"fetchcert" description:"Retrieve TLS cert and store it in cert file"`
 }
 
 func setOptionDefaults() {
@@ -50,9 +50,9 @@ func main() {
 	switch options.LogStyle {
 	case "text":
 		log.SetFormatter(&log.TextFormatter{
-			FullTimestamp: true,
+			FullTimestamp:          true,
 			DisableLevelTruncation: true,
-			PadLevelText: true,
+			PadLevelText:           true,
 		})
 	case "logfmt":
 		log.SetFormatter(&log.TextFormatter{
@@ -83,25 +83,25 @@ func main() {
 }
 
 func pwclientLog(v ...interface{}) {
-        log.Debug(v...)
+	log.Debug(v...)
 }
 
 type Config struct {
-	Web WebConfig
+	Web    WebConfig
 	Device DeviceConfig
 }
 type WebConfig struct {
 	ListenAddress string `yaml:"listen_address"`
-	MetricsPath string `yaml:"metrics_path"`
+	MetricsPath   string `yaml:"metrics_path"`
 }
 type DeviceConfig struct {
-	GatewayAddress string `yaml:"gateway_address"`
-	LoginEmail string `yaml:"login_email"`
-	LoginPassword string `yaml:"login_password"`
-	RetryInterval time.Duration `yaml:"retry_interval"`
-	RetryTimeout time.Duration `yaml:"retry_timeout"`
-	TLSCertFile string `yaml:"tls_cert_file"`
-	cert *x509.Certificate
+	GatewayAddress string        `yaml:"gateway_address"`
+	LoginEmail     string        `yaml:"login_email"`
+	LoginPassword  string        `yaml:"login_password"`
+	RetryInterval  time.Duration `yaml:"retry_interval"`
+	RetryTimeout   time.Duration `yaml:"retry_timeout"`
+	TLSCertFile    string        `yaml:"tls_cert_file"`
+	cert           *x509.Certificate
 }
 
 var config Config
@@ -122,12 +122,12 @@ func loadConfig(filename string) {
 	retryTimeout, _ := time.ParseDuration(defaultRetryTimeout)
 	config.Web = WebConfig{
 		ListenAddress: defaultListenAddress,
-		MetricsPath: defaultMetricsPath,
+		MetricsPath:   defaultMetricsPath,
 	}
 	config.Device = DeviceConfig{
-		LoginEmail: defaultLoginEmail,
+		LoginEmail:    defaultLoginEmail,
 		RetryInterval: retryInterval,
-		RetryTimeout: retryTimeout,
+		RetryTimeout:  retryTimeout,
 	}
 
 	err = yaml.UnmarshalStrict(yamlFile, &config)
@@ -211,11 +211,11 @@ func startServer() {
 }
 
 func indexPageHandler(w http.ResponseWriter, r *http.Request) {
-	templateValues := struct{
-		Exporter string
-		Version string
+	templateValues := struct {
+		Exporter    string
+		Version     string
 		MetricsPath string
-		ProjectURL string
+		ProjectURL  string
 	}{exporterName, exporterVersion, config.Web.MetricsPath, projectURL}
 
 	// Ordinarily we should probably parse the template once ahead of time and

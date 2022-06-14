@@ -3,19 +3,19 @@ package main
 import (
 	"net"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/cazzar/go-powerwall"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/foogod/go-powerwall"
+	log "github.com/sirupsen/logrus"
 )
 
-type powerwallCollector struct{
-	pw *powerwall.Client
+type powerwallCollector struct {
+	pw      *powerwall.Client
 	metrics map[string]*prometheus.Desc
 }
 
 func NewPowerwallCollector(client *powerwall.Client) *powerwallCollector {
 	c := powerwallCollector{
-		pw: client,
+		pw:      client,
 		metrics: make(map[string]*prometheus.Desc),
 	}
 	c.newDesc("info", "Device Information", []string{"version", "git_hash"})
@@ -123,7 +123,7 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 			return
 		}
 	} else {
-		c.setGauge(ch, "charge_ratio", soe.Percentage / 100)
+		c.setGauge(ch, "charge_ratio", soe.Percentage/100)
 	}
 
 	opdata, err := c.pw.GetOperation()
@@ -134,7 +134,7 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	} else {
 		c.setGauge(ch, "operation_mode", 1, opdata.RealMode)
-		c.setGauge(ch, "reserve_ratio", opdata.BackupReservePercent / 100)
+		c.setGauge(ch, "reserve_ratio", opdata.BackupReservePercent/100)
 	}
 
 	sitemaster, err := c.pw.GetSitemaster()
@@ -169,15 +169,15 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 			return
 		}
 	} else {
-		c.setGauge(ch, "full_pack_joules", sysstatus.NominalFullPackEnergy * 3600)
-		c.setGauge(ch, "remaining_joules", sysstatus.NominalEnergyRemaining * 3600)
+		c.setGauge(ch, "full_pack_joules", sysstatus.NominalFullPackEnergy*3600)
+		c.setGauge(ch, "remaining_joules", sysstatus.NominalEnergyRemaining*3600)
 		c.setGauge(ch, "island_state", 1, sysstatus.SystemIslandState)
 
 		for _, block := range sysstatus.BatteryBlocks {
 			serial := block.PackageSerialNumber
 			c.setGauge(ch, "battery_info", 1, serial, block.PackagePartNumber, block.Version)
-			c.setGauge(ch, "battery_full_pack_joules", block.NominalFullPackEnergy * 3600, serial)
-			c.setGauge(ch, "battery_remaining_joules", block.NominalEnergyRemaining * 3600, serial)
+			c.setGauge(ch, "battery_full_pack_joules", block.NominalFullPackEnergy*3600, serial)
+			c.setGauge(ch, "battery_remaining_joules", block.NominalEnergyRemaining*3600, serial)
 			c.setGauge(ch, "battery_output_volts", block.VOut, serial)
 			c.setGauge(ch, "battery_output_amps", block.IOut, serial)
 			c.setGauge(ch, "battery_output_hz", block.FOut, serial)
@@ -198,10 +198,10 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 			// been reset when they actually haven't, so we just
 			// don't report these stats if they're showing zero.
 			if block.EnergyCharged != 0 {
-				c.setCounter64(ch, "battery_charged_joules_total", float64(block.EnergyCharged) * 3600, serial)
+				c.setCounter64(ch, "battery_charged_joules_total", float64(block.EnergyCharged)*3600, serial)
 			}
 			if block.EnergyDischarged != 0 {
-				c.setCounter64(ch, "battery_discharged_joules_total", float64(block.EnergyDischarged) * 3600, serial)
+				c.setCounter64(ch, "battery_discharged_joules_total", float64(block.EnergyDischarged)*3600, serial)
 			}
 		}
 	}
@@ -232,10 +232,10 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 			// been reset when they actually haven't, so we just
 			// don't report these stats if they're showing zero.
 			if data.EnergyExported != 0 {
-				c.setCounter64(ch, "exported_joules_total", float64(data.EnergyExported) * 3600, cat)
+				c.setCounter64(ch, "exported_joules_total", float64(data.EnergyExported)*3600, cat)
 			}
 			if data.EnergyImported != 0 {
-				c.setCounter64(ch, "imported_joules_total", float64(data.EnergyImported) * 3600, cat)
+				c.setCounter64(ch, "imported_joules_total", float64(data.EnergyImported)*3600, cat)
 			}
 
 			devs, err := c.pw.GetMeters(cat)
@@ -258,10 +258,10 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 
 					// (see comment above about exported/imported counters on power-up)
 					if data.EnergyExported != 0 {
-						c.setCounter64(ch, "dev_exported_joules_total", float64(data.EnergyExported) * 3600, cat, devtype, serial)
+						c.setCounter64(ch, "dev_exported_joules_total", float64(data.EnergyExported)*3600, cat, devtype, serial)
 					}
 					if data.EnergyImported != 0 {
-						c.setCounter64(ch, "dev_imported_joules_total", float64(data.EnergyImported) * 3600, cat, devtype, serial)
+						c.setCounter64(ch, "dev_imported_joules_total", float64(data.EnergyImported)*3600, cat, devtype, serial)
 					}
 				}
 			}
@@ -275,13 +275,13 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 			return
 		}
 	} else {
-		for _, net := range *nets {
-			name := net.NetworkName
-			nettype := net.Interface
-			c.setGaugeBool(ch, "network_enabled", net.Enabled, nettype, name)
-			c.setGaugeBool(ch, "network_active", net.Active, nettype, name)
-			c.setGaugeBool(ch, "network_primary", net.Primary, nettype, name)
-			iface := net.IfaceNetworkInfo
+		for _, network := range *nets {
+			name := network.NetworkName
+			nettype := network.Interface
+			c.setGaugeBool(ch, "network_enabled", network.Enabled, nettype, name)
+			c.setGaugeBool(ch, "network_active", network.Active, nettype, name)
+			c.setGaugeBool(ch, "network_primary", network.Primary, nettype, name)
+			iface := network.IfaceNetworkInfo
 			if iface.NetworkName != "" {
 				c.setGauge(ch, "network_state", 1, nettype, name, iface.State, iface.StateReason)
 				if iface.SignalStrength != 0 {
@@ -293,7 +293,7 @@ func (c *powerwallCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (c *powerwallCollector) newDesc(name string, desc string, labels []string) {
-	c.metrics[name] = prometheus.NewDesc(exporterName + "_" + name, desc, labels, nil)
+	c.metrics[name] = prometheus.NewDesc(exporterName+"_"+name, desc, labels, nil)
 }
 
 func (c *powerwallCollector) Describe(ch chan<- *prometheus.Desc) {
